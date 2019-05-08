@@ -17,14 +17,38 @@ namespace squeakeys {
 
 // Event handler
 EventHandlerResult SqueakeysHandler::onKeyEvent(KeyEvent& event) {
+  // If it's not a SqueakeysKey, ignore it.
   if (! isSqueakeysKey(event.key))
     return EventHandlerResult::proceed;
+
+  // If it's a key press, we don't need to search the active_keys matrix for any
+  // other keys; we can just add it to the Squeakeys status cache(s). What we do
+  // next depends on the type of key.
+
+  // If we get a movement key press, just add it to the status bits. If the
+  // previous status was all zeros, reset speed & acceleration (or maybe that's
+  // done on release).
+
+  // If it's a mouse button key, first check if that button was already on. If
+  // so, release it and send a mouse report. Then, (regardless of whether it was
+  // added before) set that button's status bit and trigger a mouse report.
+
+  // Mouse wheel movement might be different than mouse pointer movement, but
+  // probably just insofar as v & h are definitely independent.
+
+  // Mouse warping should reset like Kaleidoscope does.
+
+  // Mouse jumping should trigger only on key press, with releases
+  // ignored. Warping should work the same.
 
   if (event.state.toggledOn()) {
     move_speed_ = 3;
     last_move_update_time_ = Controller::scanStartTime();
     move_start_time_ = Controller::scanStartTime();
   } else {
+    // It's a key release. Here, for some keys, we need to search the active
+    // keys to make sure no other keys of the same value are still held before
+    // clearing the corresponding bit in the status variable.
     move_speed_ = 0;
   }
   return EventHandlerResult::proceed;
