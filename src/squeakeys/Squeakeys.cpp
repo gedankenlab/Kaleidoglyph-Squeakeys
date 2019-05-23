@@ -56,15 +56,7 @@ EventHandlerResult SqueakeysHandler::onKeyEvent(KeyEvent& event) {
         ++warp_level_x;
         warp_position_.x += warp_center >> warp_level_x;
       }
-      warp_status_ = warp_level_y;
-      Serial.println(warp_status_, BIN);
-      warp_status_ <<= 4;
-      Serial.println(warp_status_, BIN);
-      warp_level_x &= 0b00001111;
-      Serial.println(warp_level_x, BIN);
-      warp_status_ |= warp_level_x;
-      Serial.println(warp_status_, BIN);
-      //warp_status_ = (warp_level_y << 4) | (warp_level_x & 0x0F);
+      warp_status_ = (warp_level_y << 4) | (warp_level_x & 0x0F);
 
       hid::mouse::absolute::Report absolute_mouse_report;
       absolute_mouse_report.moveCursorTo(warp_position_.x, warp_position_.y);
