@@ -19,3 +19,4 @@
 #pragma once
 
 #include "squeakeys/Squeakeys.h"
+#include "squeakeys/SqueakeysKey.h"

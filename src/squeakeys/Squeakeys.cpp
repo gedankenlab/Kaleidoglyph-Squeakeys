@@ -18,8 +18,101 @@ namespace squeakeys {
 // Event handler
 EventHandlerResult SqueakeysHandler::onKeyEvent(KeyEvent& event) {
   // If it's not a SqueakeysKey, ignore it.
-  if (! isSqueakeysKey(event.key))
+  if (! isSqueakeysKey(event.key)) {
+    warp_status_ = 0;
     return EventHandlerResult::proceed;
+  }
+
+  SqueakeysKey squeakeys_key{event.key};
+
+  SqueakeysKeyVariant key_type = squeakeys_key.variant();
+
+  if (key_type == SqueakeysKeyVariant::warp) {
+    if (event.state.toggledOn()) {
+      byte warp_direction = squeakeys_key.value();
+      if (warp_direction == 0) {
+        warp_status_ = 0;
+        return EventHandlerResult::proceed;
+      }
+      if (warp_status_ == 0) {
+        warp_position_ = {warp_center, warp_center};
+      }
+      Serial.println(warp_status_, BIN);
+      byte warp_level_x = warp_status_ & 0x0F;
+      byte warp_level_y = warp_status_ >> 4;
+      if (warp_direction & direction_up) {
+        ++warp_level_y;
+        warp_position_.y -= warp_center >> warp_level_y;
+      }
+      if (warp_direction & direction_down) {
+        ++warp_level_y;
+        warp_position_.y += warp_center >> warp_level_y;
+      }
+      if (warp_direction & direction_left) {
+        ++warp_level_x;
+        warp_position_.x -= warp_center >> warp_level_x;
+      }
+      if (warp_direction & direction_right) {
+        ++warp_level_x;
+        warp_position_.x += warp_center >> warp_level_x;
+      }
+      warp_status_ = warp_level_y;
+      Serial.println(warp_status_, BIN);
+      warp_status_ <<= 4;
+      Serial.println(warp_status_, BIN);
+      warp_level_x &= 0b00001111;
+      Serial.println(warp_level_x, BIN);
+      warp_status_ |= warp_level_x;
+      Serial.println(warp_status_, BIN);
+      //warp_status_ = (warp_level_y << 4) | (warp_level_x & 0x0F);
+
+      hid::mouse::absolute::Report absolute_mouse_report;
+      absolute_mouse_report.moveCursorTo(warp_position_.x, warp_position_.y);
+      // There should be no need to press mouse buttons here.
+      //absolute_mouse_report.pressButtons(buttons_);
+      controller_.sendMouseReport(absolute_mouse_report);
+    }
+    return EventHandlerResult::proceed; // proceed?
+  } else {
+    warp_status_ = 0;
+  }
+
+  switch (squeakeys_key.variant()) {
+
+    case SqueakeysKeyVariant::button: {
+      if (event.state.toggledOn()) {
+        buttons_ |= squeakeys_key.value();
+      } else {
+        // TODO: check for other mouse button keys held first
+        buttons_ &= ~(squeakeys_key.value());
+      }
+      hid::mouse::Report mouse_report;
+      mouse_report.pressButtons(buttons_);
+      controller_.sendMouseReport(mouse_report);
+      break;
+    }
+
+    case SqueakeysKeyVariant::move: {
+      if (event.state.toggledOn()) {
+        if (move_direction_ == 0) {
+          move_speed_ = 3;
+          last_move_update_time_ = Controller::scanStartTime();
+          move_start_time_ = Controller::scanStartTime();
+        }
+        move_direction_ |= squeakeys_key.value();
+      } else {
+        // TODO: check for other mouse move keys held first
+        move_direction_ &= ~(squeakeys_key.value());
+        if (move_direction_ == 0) {
+          move_speed_ = 0;
+        }
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
 
   // If it's a key press, we don't need to search the active_keys matrix for any
   // other keys; we can just add it to the Squeakeys status cache(s). What we do
@@ -42,14 +135,10 @@ EventHandlerResult SqueakeysHandler::onKeyEvent(KeyEvent& event) {
   // ignored. Warping should work the same.
 
   if (event.state.toggledOn()) {
-    move_speed_ = 3;
-    last_move_update_time_ = Controller::scanStartTime();
-    move_start_time_ = Controller::scanStartTime();
   } else {
     // It's a key release. Here, for some keys, we need to search the active
     // keys to make sure no other keys of the same value are still held before
     // clearing the corresponding bit in the status variable.
-    move_speed_ = 0;
   }
   return EventHandlerResult::proceed;
 }
@@ -105,6 +194,24 @@ void SqueakeysHandler::preKeyswitchScan() {
 
   int8_t delta = scaled_speed >> 4;
 
+  int8_t x_delta{0};
+  int8_t y_delta{0};
+
+  if (move_direction_ & direction_up) {
+    y_delta -= delta;
+  }
+  if (move_direction_ & direction_down) {
+    y_delta += delta;
+  }
+  if (move_direction_ & direction_left) {
+    x_delta -= delta;
+  }
+  if (move_direction_ & direction_right) {
+    x_delta += delta;
+  }
+
+
+
 
   // uint16_t total_speed = scaled_speed << move_speed_;
   // total_speed += remainder;
@@ -115,7 +222,8 @@ void SqueakeysHandler::preKeyswitchScan() {
   
 
   hid::mouse::Report mouse_report;
-  mouse_report.moveCursor(delta, 0);
+  mouse_report.moveCursor(x_delta, y_delta);
+  mouse_report.pressButtons(buttons_);
   controller_.sendMouseReport(mouse_report);
 }
 

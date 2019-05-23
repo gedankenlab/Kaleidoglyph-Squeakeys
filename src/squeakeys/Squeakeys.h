@@ -31,6 +31,15 @@ class SqueakeysHandler : public EventHandler {
 
   static constexpr uint16_t move_acceleration_duration{2000};
 
+  static constexpr byte direction_up    {1 << 0};
+  static constexpr byte direction_down  {1 << 1};
+  static constexpr byte direction_left  {1 << 2};
+  static constexpr byte direction_right {1 << 3};
+
+  static constexpr uint16_t warp_width{32767};
+  static constexpr uint16_t warp_height{32767};
+  static constexpr uint16_t warp_center {1 << 14};
+
   SqueakeysHandler(Controller& controller) : controller_(controller) {}
 
   void preKeyswitchScan();
@@ -66,6 +75,16 @@ class SqueakeysHandler : public EventHandler {
   uint16_t scroll_speed_{0};
   uint16_t scroll_speed_limit{scroll_speed_limit_normal};
   // Scroll acceleration should be much slower than move acceleration.
+
+  // State variable for buttons.
+  byte buttons_{0};
+
+  // warping
+  byte warp_status_{0};
+  struct {
+    uint16_t x;
+    uint16_t y;
+  } warp_position_;
 };
 
 } // namespace qukeys {
