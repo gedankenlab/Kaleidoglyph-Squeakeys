@@ -52,28 +52,28 @@ class SqueakeysHandler : public EventHandler {
   // active_keys array only when necessary (on release of certain types). Maybe
   // it will still be useful to track the number of mouse movement keys held to
   // short-circuit that check in most cases.
-  Bitfield<total_keys> active_squeakeys_addrs_;
-  bool any_active_squeakeys{false};
-  byte active_squeakeys_count_{0};
+  // Bitfield<total_keys> active_squeakeys_addrs_;
+  // bool any_active_squeakeys{false};
+  // byte active_squeakeys_count_{0};
 
   // Updates need to happen much more often than every 256ms, so eight bits
   // should be sufficient for timestamps.
   uint16_t move_start_time_;
-  uint8_t wheel_start_time_;
+  // uint8_t wheel_start_time_;
   uint8_t last_move_update_time_{0};
 
   // One bitfield should be sufficient for scrolling and movement, but maybe
   // that doesn't transfer efficiently to the HID report.
-  byte move_and_scroll_direction_{0};
+  // byte move_and_scroll_direction_{0};
   
   // State variables for mouse movement.
   byte move_direction_{0};
   int8_t move_speed_{0};
-  uint16_t move_speed_limit_{move_speed_limit_normal};
+  // uint16_t move_speed_limit_{move_speed_limit_normal};
 
   // State variables for wheel.
-  uint16_t scroll_speed_{0};
-  uint16_t scroll_speed_limit{scroll_speed_limit_normal};
+  // uint16_t scroll_speed_{0};
+  // uint16_t scroll_speed_limit{scroll_speed_limit_normal};
   // Scroll acceleration should be much slower than move acceleration.
 
   // State variable for buttons.
